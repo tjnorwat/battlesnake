@@ -1,0 +1,51 @@
+need a way to have a better way of dynamic inputs 
+
+list of previous moves (previous moves for other snakes?)
+vision - instead of checking adjacent squares, broaden vision until wall/other snake/my snake
+    distance to myself (-1 if not found?) 
+    distance to apple 
+    distance to wall  
+length
+distance to tail? 
+moves to get apple? 
+direction? 
+snake head 
+
+
+not sure how to go about having multiple snakes in game 
+distance to wall and other snakes be considered the same ? 
+    probably not 
+
+
+"health" max moves to get apple 
+    7x7 seems to start at 100 and go down by 1 for each move 
+
+15% chance another apple spawns
+
+mvp - singleplayer
+7x7 
+vision and previous moves 
+
+snake is free to move in any direction at the start of the round 
+snake starts in random position each time
+snake length starts at 1, then automatically goes to 3
+    if we eat an apple before we reach 3, we just keep adding more to the snake every move
+looks like there is always 2 apple at spawn 
+there is 15% chance to spawn another apple every move
+on the 4th move, we can check whether or not we run into ourselves
+    this is because the snake starts with length 3 and has the same coordinates 
+believe we can just use the direction to get the action since they are related 
+    return the direction in `info` dictionary and disregard the action var
+
+interesting idea :
+have inputs for the whole board on apples 
+same could be said for snake body
+
+
+DUELS 
+
+* snake that is larger will eat the other snake 
+    * snake can come from any direction
+    * same length, both die 
+* if snake runs into another snake it dies, no matter the length
+* snakes start in random location
