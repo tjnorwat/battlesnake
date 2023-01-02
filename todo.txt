@@ -96,3 +96,29 @@ seems like for every observation, we see the other observations of all the other
 
 * WERID BEHAVEIOR 
 if a snake dies and another snake runs into the one thats dead, does he also die ?? ? rn, no
+
+
+* FPS issues
+        * just a problem with running 1 
+    * check previous snake in single env 
+    * figure out dummyvecenv??
+
+* normalize inputs 
+    * sight obs range [-1, 1]
+    * rest should be [0, 1]
+    * have to calcluate like values, can't group everything up 
+        * create multiple fucntions for each type 
+
+* render screen
+    *lenght of each snake 
+    * who wins at end 
+
+
+# check start spawning of each snake (is there a certain distance they must be apart? )
+# reward for eating another snake should be higher 
+# implement reward for less moves ?? 
+
+
+# intitiate to zero for prev action 
+# look into difference betwen negative nad postiive values for obs 
+# redo rewards for better sum zero 

@@ -7,8 +7,20 @@ from PlayerData import PlayerData as Player
 class Snake(Env):
 
     def __init__(self, size=7, is_human=False, time_between_moves=100, timestep=None, num_players=1):
-        # super(Snake, self).__init__()
-        super().__init__()
+        super(Snake, self).__init__()
+        # super().__init__()
+
+        # starting positions for the snakes 
+        self.starting_positions = [
+            [[1, 1], [5, 1]], # bottom left, bottom right
+            [[1, 1], [5, 5]], # bottom left, top right
+            [[1, 3], [5, 3]], # mid left, mid right
+            [[1, 1], [1, 5]], # bottom left, top left
+            [[3, 1], [5, 3]], # mid bottom, mid right
+            [[1, 5], [5, 5]], # bottom right, top right
+            [[3, 5], [5, 3]], # mid top, right mid 
+            [[1, 3], [5, 3]] # mid mid, mid mid
+        ]
 
         # BGR !!!!
         self.colors = {
@@ -35,10 +47,10 @@ class Snake(Env):
         self.whole_coord = np.mgrid[0:size, 0:size].reshape(2, -1).T.tolist()
 
         # calculating observation shape 
-        obs_size = 11
+        obs_size = 12
         directions_size = 3 * 8 + (num_players - 1) * 8
         # prev_action_size = self.size ** 2 + 1 # could also be 100 for health ?? 
-        prev_action_size = 100  
+        prev_action_size = 30  
 
         total_size = obs_size + directions_size + prev_action_size
 
@@ -52,10 +64,14 @@ class Snake(Env):
         self.action_space = spaces.Discrete(3)
         # self.action_space = spaces.MultiDiscrete([3] * num_players)
         
-        shape = (num_players, total_size * num_players)
-        # shape = (total_size * num_players * num_players,)
-        print('final shape', shape)
-        self.observation_space = spaces.Box(low=-1, high=high, shape=shape, dtype=np.float16) # change later 
+        # shape = (num_players, total_size * num_players)
+        shape = (total_size * num_players,) # for single AND MULTI
+        # shape = (total_size,) # for single AND MULTI
+        # shape = (total_size * num_players * 2,) # for multi 
+        # shape = (2 * num_players,)
+        # shape = (2,)
+        # print('final shape', shape)
+        self.observation_space = spaces.Box(low=-1, high=1, shape=shape, dtype=np.float16) # change later 
 
 
     # after every step there is a 15% chance to spawn an apple 
@@ -67,7 +83,7 @@ class Snake(Env):
         rewards = list()
         apples_to_delete = list()
 
-        print('ACTIONS', actions)
+        # print('ACTIONS gym', actions)
         # if not isinstance(actions, list):
         #     actions = [actions]
         for action, player in zip(actions, self.snake_players):
@@ -94,8 +110,8 @@ class Snake(Env):
 
         # colliding with other snakes 
         # sometimes we change the reward based on if we eat / collide with another snake
-        for idx, player1 in enumerate(self.snake_players):
-            for player2 in self.snake_players:
+        for idx1, player1 in enumerate(self.snake_players):
+            for idx2, player2 in enumerate(self.snake_players):
                 # make sure the snake isnt dead
                 if not player1.isDone():
                     if player1.getID() != player2.getID() and not player2.isDone():
@@ -106,16 +122,40 @@ class Snake(Env):
                             player1_score = player1.getScore()
                             player2_score = player2.getScore()
                             if player1_score > player2_score:
-                                rewards[idx] = 2 # reward for "eating" the other snake
-                                
-                            # if same length or smaller, both would lose 
-                            elif player1_score <= player2_score:
-                                rewards[idx] = -1
+                                rewards[idx1] = 3 # reward for "eating" the other snake
+                                player2.setDone(True)
+                                rewards[idx2] = -3
+                            # same length, both players would lose 
+                            # this is also the only one that matters in 1v1
+                            elif player1_score == player2_score:
+                                rewards[idx1] = -6
+                                rewards[idx2] = -6
                                 player1.setDone(True)
+                                player2.setDone(True)
+                            
+                            elif player1_score < player2_score:
+                                rewards[idx1] = -3
+                                player1.setDone(True)
+                                rewards[idx2] = 3 
                         # otherwise just a collision with another snake body
                         elif snake_collision:
-                            rewards[idx] = -1
+                            rewards[idx1] = -3
                             player1.setDone(True)
+
+
+        # zero sum reward
+        # so if a snake eats an apple, that is bad for the other snakes 
+        # do i need to account for if a snake wins? or is the reward for dying enough
+        # not sure if this works with more than 2 snakes 
+        for idx1, player1 in enumerate(self.snake_players):
+            for idx2, player2 in enumerate(self.snake_players):
+                if player1.getID() != player2.getID():
+                    # if both players got an apple, do we subtract? 
+                    if rewards[idx1] == 1 and rewards[idx2] == 1:
+                        pass
+                    # if the snake at an apple, the other snake gets penalized 
+                    elif rewards[idx1] == 1:
+                        rewards[idx2] -= 1
 
         obs = self._GetOBS()
         # print('obs shape', np.shape(obs))
@@ -142,12 +182,14 @@ class Snake(Env):
                 # make sure we reward the snake for winning 
                 for idx, player in enumerate(self.snake_players):
                     if not player.isDone():
+                        rewards = [-5] * self.num_players
                         rewards[idx] = 5
                 done = True
-
-        info = dict()
         
-        return np.array(obs), np.array(rewards), done, info
+        # print(rewards)
+        info = dict()
+        # rewards = [.5, .4]
+        return obs, rewards, done, info
 
 
     def reset(self):
@@ -166,33 +208,64 @@ class Snake(Env):
         if self.size == 11:
             self._GetRandomApplePosition()
 
-        return np.array(self._GetOBS())
+        return self._GetOBS()
 
 
     def _GetOBS(self):
         
+        # obs = list()
+
+        # for player1 in self.snake_players:
+        #     # first we get the player obs and then we can append the other snakes obs 
+        #     # observation includes that of the player 
+        #     # how close it is to other snakes
+        #     # what the observations of other snakes
+        #     # for each player
+        #     temp_obs = player1.getOBS(self.snake_players, self.apple_positions)
+
+        #     for player2 in self.snake_players:
+        #         # already got player above
+        #         if player1.getID() != player2.getID():
+        #             # extending current observation of specific player
+        #             temp_obs.extend(player2.getOBS(self.snake_players, self.apple_positions))
+
+        #     obs.append(temp_obs)
+
+
+        # cache all player obs and then create list? 
+        all_player_obs = dict()
+        for player in self.snake_players:
+            all_player_obs[player.getID()] = player.getOBS(self.snake_players, self.apple_positions)
+
+
+        # # test for just individual snakes obs 
+        # obs = list()
+        # for value in all_player_obs.values():
+        #     obs.append(value)
+
+        # adding the other snakes obs to each snake
         obs = list()
+        for id1 in all_player_obs.keys():
+            temp_obs = all_player_obs[id1].copy()
 
-        for player1 in self.snake_players:
-            # first we get the player obs and then we can append the other snakes
-            # observation includes that of the player 
-            # how close it is to other snakes
-            # what the observations of other snakes
-            # for each player
-            temp_obs = player1.getOBS(self.snake_players, self.apple_positions)
-
-            for player2 in self.snake_players:
-                # already got player above
-                if player1.getID() != player2.getID():
-                    # extending current observation of specific player
-                    temp_obs.extend(player2.getOBS(self.snake_players, self.apple_positions))
-
+            for id2 in all_player_obs.keys():
+                if id1 != id2:
+                    # temp_obs.extend(all_player_obs[id2])
+                    temp_obs += all_player_obs[id2]
+            # print(temp_obs)
             obs.append(temp_obs)
 
-        print('other shape', np.shape(obs))
+        # if obs == test_obs:
+        #     print('OH YEHA')
         # obs = np.concatenate(obs)
         # return obs
-        return np.array(obs)
+
+        # obs = [[1,2,3,4], [5,6,7,8]]
+        # print('other shape', np.shape(obs))
+
+        # obs = [[1,2], [3, 4]]
+
+        return obs
 
 
     def _GetRandomApplePosition(self):
@@ -200,8 +273,8 @@ class Snake(Env):
 
         all_snake_pos = list()
         for player in self.snake_players:
-            all_snake_pos.extend(player.getPosition())
-
+            # all_snake_pos.extend(player.getPosition())
+            all_snake_pos += player.getPosition()
         choices = [choice for choice in self.whole_coord if choice not in all_snake_pos and choice not in self.apple_positions]
         # make sure the board isn't filled up completely 
         if choices:
@@ -211,34 +284,55 @@ class Snake(Env):
 
     def _GetRandomSnakePositions(self):
         # easy to see what psots have been taken already
-        taken_positions = list()
-
+        # taken_positions = list()
+        random_start_pos = random.choice(self.starting_positions)
         # loop through all players and set their positiion randomly
         for i in range(self.num_players):
+            
+            # TESTING SOME STUFF 
+            # new_player = Player(ID=i, is_human=True, size=self.size)
+            # print(random_start_pos)
+            # print(random_start_pos[0])
+            # new_player.SetPosition([random_start_pos[i]] * 3)
+            # self.snake_players.append(new_player)
 
-            # if this is the first snake just choose a random spot
-            if not self.snake_players:
+            # print(new_player.getHead())
 
-                if self.is_human:
-                    new_player = Player(ID=i, is_human=True, size=self.size)
-                else:
-                    new_player = Player(ID=i, size=self.size) 
 
-                random_pos = random.choice(self.whole_coord)
-                taken_positions.append(random_pos)
-                new_player.SetPosition([random_pos] * 3)
-                self.snake_players.append(new_player)
-
-            # make sure we dont occupy the same space as other snakes 
+            if self.is_human:
+                new_player = Player(ID=i, is_human=True, size=self.size)
             else:
-                # new_player = Player(ID=i, size=self.size) 
-                new_player = Player(ID=i, is_human=True, size=self.size) # TESTING PURPOSE
+                new_player = Player(ID=i, size=self.size) 
 
-                choices = [choice for choice in self.whole_coord if choice not in taken_positions]
-                random_pos = random.choice(choices)
-                taken_positions.append(random_pos)
-                new_player.SetPosition([random_pos] * 3)
-                self.snake_players.append(new_player)
+            new_player.SetPosition([random_start_pos[i]] * 3)
+            self.snake_players.append(new_player)
+
+            # # if this is the first snake just choose a random spot
+            # if not self.snake_players:
+
+            #     if self.is_human:
+            #         new_player = Player(ID=i, is_human=True, size=self.size)
+            #     else:
+            #         new_player = Player(ID=i, size=self.size) 
+
+            #     random_pos = random.choice(self.whole_coord)
+            #     taken_positions.append(random_pos)
+            #     new_player.SetPosition([random_pos] * 3)
+            #     self.snake_players.append(new_player)
+
+            # # make sure we dont occupy the same space as other snakes 
+            # else:
+            #     new_player = Player(ID=i, size=self.size) 
+            #     # new_player = Player(ID=i, is_human=True, size=self.size) # TESTING PURPOSE
+
+            #     choices = [choice for choice in self.whole_coord if choice not in taken_positions]
+            #     random_pos = random.choice(choices)
+            #     taken_positions.append(random_pos)
+            #     new_player.SetPosition([random_pos] * 3)
+            #     self.snake_players.append(new_player)
+        
+
+
 
 
     # this is for communicating with the battlesnake API 
@@ -268,17 +362,45 @@ class Snake(Env):
         img = np.zeros((self.size* renderer, self.size * renderer, 3), dtype=np.uint8)
 
         colors_list = list(self.colors.values())[1:]
+       
+        # for the STREAM 
+        padding = np.full((self.size * renderer, 300, 3), self.colors['soulless'][2], dtype=np.uint8)
+        img = np.append(img, padding, axis=1)
 
+        i = 1
         for color, player in zip(colors_list, self.snake_players):
-            if not player.isDone():
-                head = player.getHead()
-                cv2.rectangle(img=img, pt1=(head[0] * renderer, (self.size - head[1]) * renderer - renderer), pt2=(head[0] * renderer + renderer, (self.size - head[1]) * renderer), color=color[0], thickness=-1)
+            head = player.getHead()
+            cv2.rectangle(img=img, pt1=(head[0] * renderer, (self.size - head[1]) * renderer - renderer), pt2=(head[0] * renderer + renderer, (self.size - head[1]) * renderer), color=color[0], thickness=-1)
 
-                for position in player.getPosition()[1:-1]:
-                    cv2.rectangle(img=img, pt1=(position[0] * renderer, (self.size - position[1]) * renderer - renderer), pt2=(position[0] * renderer + renderer, (self.size - position[1]) * renderer), color=color[1], thickness=-1)
-                
-                tail = player.getTail()
-                cv2.rectangle(img=img, pt1=(tail[0] * renderer, (self.size - tail[1]) * renderer - renderer), pt2=(tail[0] * renderer + renderer, (self.size - tail[1]) * renderer), color=color[2], thickness=-1)
+            for position in player.getPosition()[1:-1]:
+                cv2.rectangle(img=img, pt1=(position[0] * renderer, (self.size - position[1]) * renderer - renderer), pt2=(position[0] * renderer + renderer, (self.size - position[1]) * renderer), color=color[1], thickness=-1)
+            
+            tail = player.getTail()
+            cv2.rectangle(img=img, pt1=(tail[0] * renderer, (self.size - tail[1]) * renderer - renderer), pt2=(tail[0] * renderer + renderer, (self.size - tail[1]) * renderer), color=color[2], thickness=-1)
+            if not player.isDone():
+
+                cv2.putText(
+                    img=img, 
+                    text=f'Agent {i} Len: {player.getScore()}', 
+                    org=( ((self.size) * renderer), renderer * i), 
+                    fontFace=cv2.FONT_HERSHEY_DUPLEX, 
+                    fontScale=.8, 
+                    color=color[1], 
+                    thickness=2
+                )
+            
+            else:
+                cv2.putText(
+                    img=img, 
+                    text=f'Agent {i} Len: {player.getScore()} died', 
+                    org=( ((self.size) * renderer), renderer * i), 
+                    fontFace=cv2.FONT_HERSHEY_DUPLEX, 
+                    fontScale=.8, 
+                    color=color[1], 
+                    thickness=2
+                )
+            
+            i += 1
 
         # drawing the apple
         for apple_position in self.apple_positions:
@@ -303,10 +425,7 @@ class Snake(Env):
         # # drawing the apple
         # for apple_position in self.apple_positions:
         #     cv2.rectangle(img=img, pt1=(apple_position[0] * renderer, (self.size - apple_position[1]) * renderer - renderer), pt2=(apple_position[0] * renderer + renderer, (self.size - apple_position[1]) * renderer), color=(0,0,255), thickness=-1)
-       
-        # # for the STREAM 
-        # padding = np.full((self.size * renderer, 300, 3), 125, dtype=np.uint8)
-        # img = np.append(img, padding, axis=1)
+
 
         # cv2.putText(
         #     img=img, 

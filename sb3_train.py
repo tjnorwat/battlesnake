@@ -2,60 +2,70 @@ from stable_baselines3 import PPO
 from stable_baselines3.ppo import MlpPolicy
 from SnakeEnvironment import Snake
 from single_instance_env import SB3SingleInstanceEnv
-from stable_baselines3.common.vec_env import VecMonitor, VecNormalize, VecCheckNan
+from stable_baselines3.common.vec_env import VecMonitor, VecNormalize, VecCheckNan,  DummyVecEnv
 import os
+import time
 
-def GetNewestModel(env, recent_timestep=0, recent_file=0):
+# def multi(size):
 
-    if not recent_timestep:
-        for f in os.scandir('models'):
-            f = int(os.path.splitext(f.name)[0])
-            if recent_timestep < f:
-                recent_timestep =f
+# 	def main():
+
+# 		def _init():
+#             a = 1
+#             snake = Snake(num_players=2)
+#             env = SB3SingleInstanceEnv(snake)
+#             env = VecMonitor(env)
+# 			return env
+
+# 		return _init
+
+# 	num_cpu = 12
+# 	return DummyVecEnv([main() for _ in range(num_cpu)])
 
 
-    # recent_timestep = 1662742597
+def multi():
 
-    # size 6; completes the game 
-    # recent_timestep = 1662781705 
-    print('timestep', recent_timestep)
-    models_dir = f'models/{recent_timestep}'
+    def main():
+        def _init():
+            snake = Snake(num_players=2)
+            env = SB3SingleInstanceEnv(snake)
+            return env
 
-    if not recent_file:
-        for f in os.scandir(models_dir):
-            f = int(os.path.splitext(f.name)[0])
-            if recent_file < f:
-                recent_file = f
+        return _init
 
-    print(f'zip file {recent_file}')
-    model_path = f'{models_dir}/{recent_file}'
+    num_envs = 2
+    return DummyVecEnv([main() for _ in range(num_envs)])
 
-    return PPO.load(model_path, env=env, device='cpu', custom_objects=dict(n_envs=2))
 
 
 snake = Snake(num_players=2)
 
 env = SB3SingleInstanceEnv(snake)
-# env = VecMonitor(env)
+env = VecMonitor(env)
 
 
-logdir = 'logs/out'
-models_dir = 'models/'
+# env = multi()
+
+time_now = int(time.time())
+models_dir = f'models/{time_now}'
+logdir = f'logs/{time_now}'
 
 model = PPO(
     MlpPolicy,
     env,
+    verbose=1,
     tensorboard_log=logdir,
-    device="cpu"                
+    device="cpu",
+    batch_size=1024
 )
 
-# TIMESTEPS = 50_000
-# iters = 0
-# while True:
-#     iters += 1
-#     # model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False, tb_log_name=f"PPO")
-#     model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False)
-#     model.save(f'{models_dir}/{TIMESTEPS*iters}')
+TIMESTEPS = 25_000
+iters = 0
+while True:
+    iters += 1
+    # model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False, tb_log_name=f"PPO")
+    model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False)
+    model.save(f'{models_dir}/{TIMESTEPS*iters}')
 
 
 model.learn(1_000)

@@ -1,4 +1,3 @@
-import gym
 import numpy as np
 from stable_baselines3.common.vec_env import VecEnv
 from stable_baselines3.common.vec_env.base_vec_env import VecEnvIndices, VecEnvStepReturn, VecEnvObs
@@ -7,7 +6,7 @@ class SB3SingleInstanceEnv(VecEnv):
 
     def __init__(self, env):
         
-        super().__init__(2, env.observation_space, env.action_space)
+        super().__init__(env.num_players, env.observation_space, env.action_space)
         self.env = env
         self.step_result = None
 
@@ -19,9 +18,10 @@ class SB3SingleInstanceEnv(VecEnv):
         return np.asarray(observations)
         # return np.concatenate(observations)
 
-    def step_async(self, actions: np.ndarray) -> None:
+    def step_async(self, actions: np.array) -> None:
+        # print('actions from vecenv', actions)
         # return super().step_async(actions)
-        self.step_result = self.env.step(np.asarray(actions))
+        self.step_result = self.env.step(actions)
         return self.step_result
 
     def step_wait(self) -> VecEnvStepReturn:
@@ -30,8 +30,8 @@ class SB3SingleInstanceEnv(VecEnv):
 
         # observations = [observations]
         # rewards = [[reward] for reward in rewards]
-        print('rewards', rewards)
-        print('rewards shape', np.shape(rewards))
+        # print('rewards', rewards)
+        # print('rewards shape', np.shape(rewards))
 
         if done:
             infos = [info] * len(rewards)
@@ -62,7 +62,7 @@ class SB3SingleInstanceEnv(VecEnv):
         pass
 
     def env_method(self, method_name: str, *method_args, indices: VecEnvIndices = None, **method_kwargs):
-        pass
+        return [False] * self.num_envs
 
     def env_is_wrapped(self, wrapper_class, indices: VecEnvIndices = None):
         return [False] * self.num_envs

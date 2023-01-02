@@ -4,8 +4,9 @@ from cv2 import waitKey
 from SnakeEnvironment import Snake
 from PlayerData import Actions
 # from improvedSnakeGame import Snake, Actions
+import time
 
-num_players = 8
+num_players = 2
 
 player = Snake(size=7, is_human=True, time_between_moves=1, num_players=num_players)
 player.reset()
