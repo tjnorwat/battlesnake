@@ -3,7 +3,7 @@ from multi_instance_env import SB3MultiInstanceEnv
 from stable_baselines3 import PPO
 from stable_baselines3.ppo import MlpPolicy
 import time
-
+import torch
 
 def getGame():
 
@@ -36,6 +36,10 @@ logdir = f'logs/{time_now}'
 #     batch_size=4096
 # )
 
+policy_kwargs={
+    'activation_fn': torch.nn.ReLU,
+    'net_arch': [256, 256]
+    }    
 
 model = PPO(
     MlpPolicy,
@@ -43,7 +47,10 @@ model = PPO(
     verbose=1,
     batch_size=4096,             # Batch size as high as possible within reason
     tensorboard_log=logdir,      # `tensorboard --logdir out/logs` in terminal to see graphs
-    device="cpu"                
+    device="cpu",
+    policy_kwargs={
+        'net_arch': [256, 256]
+    }          
 )
 
 

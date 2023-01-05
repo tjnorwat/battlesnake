@@ -122,3 +122,7 @@ if a snake dies and another snake runs into the one thats dead, does he also die
 # intitiate to zero for prev action 
 # look into difference betwen negative nad postiive values for obs 
 # redo rewards for better sum zero 
+
+# clip values between 0 and 1 
+look at obs 
+# add how many moves each snake has to render screen

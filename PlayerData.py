@@ -52,7 +52,7 @@ class PlayerData():
         self.just_eat_apple = 0
         self.done = False
         self.health = 100
-        self.prev_actions = deque([0] * 30, maxlen=30)
+        self.prev_actions = deque([-1] * 30, maxlen=30)
         self.max_score = 0
 
     def SetPosition(self, position: List[list]):
@@ -99,7 +99,6 @@ class PlayerData():
         snake_head = [ self.snake_position[0][0], self.snake_position[0][1] ]
 
         if not self.is_human:
-            # print('action playerdata', action)
             val = self.direction_arr[action][self.direction]
             which_axis = self.axis_arr[action][self.direction]
 
@@ -155,13 +154,13 @@ class PlayerData():
             if self.score > self.max_score:
                 self.max_score = self.score
 
+            # should reward not be based on how many moves it takes ? 
+            reward = 1
+            # reward = (1 - (self.moves_to_get_apple / 100)) * .8
+
             self.moves_to_get_apple = 0
             self.health = 100
 
-
-            # should reward not be based on how many moves it takes ? 
-            reward = 1
-            # reward = (1 - (self.moves_to_get_apple / 100)) * .5
 
         # otherwise just move the snake 
         else:
@@ -173,7 +172,8 @@ class PlayerData():
 
             # reward based on if we see an apple? ; not sure if this would work 
             # baseline reward for being alive
-            reward = .00001
+            # reward = .00001
+            reward = 0
 
         # collisiion with self 
         if self.total_moves > 3 and snake_head in self.snake_position[1:]:
@@ -227,7 +227,6 @@ class PlayerData():
     def getOBS(self, snake_players: List[PlayerData], apple_positions: List[list]) -> list:
 
         snake_head = self.getHead()
-        # snake_tail = self.getTail()
 
         sight_obs = list()
         # looking in 8 directions 
@@ -239,9 +238,6 @@ class PlayerData():
         for direction in self.directions:
             sight_obs += self._lookInDirection(direction, snake_head, snake_players, apple_positions)
          
-        # snake_dones = [player.isDone() for player in snake_players]
-        # num_alive_snakes = snake_dones.count(False)
-
         num_alive_snakes = 0
         for player in snake_players:
             if not player.isDone():
@@ -254,15 +250,8 @@ class PlayerData():
         norm_score = self.normalize_val(self.score, 0, self.score ** 2)
         norm_moves_to_get_apple = self.normalize_val(self.moves_to_get_apple, 0, 100)
         norm_num_apples_on_board = self.normalize_val(len(apple_positions), 1, self.size ** 2 - 3 * len(snake_players)) # always will be 1 apple 
-        norm_num_snakes_on_board = self.normalize_val(len(snake_players), 0, 2) # all snakes can die on a single  turn 
-        # norm_sight = self.normalize(sight_obs, -1, self.size - 1) # 
-        # norm_prev_actions = self.normalize(list(self.prev_actions), -1, 2)
+        norm_num_snakes_on_board = self.normalize_val(len(snake_players), 0, len(snake_players)) # all snakes can die on a single  turn 
         norm_alive_snakes = self.normalize_val(num_alive_snakes, 0, len(snake_players))
-        
-        # items that dont need to be normalized
-        # self.done; self.just_eat_apple
-        # will have to implement sight_obs and prev_actions; thinking about doing that whenever appending to original list
-
         
         normalized_obs = norm_head + \
             norm_tail + \
@@ -276,32 +265,6 @@ class PlayerData():
             norm_num_snakes_on_board
             ] + sight_obs + \
             list(self.prev_actions)
-
-        # print(normalized_obs)
-
-        # obs = [
-        #     snake_head[0],
-        #     snake_head[1],
-        #     snake_tail[0],
-        #     snake_tail[1],
-        #     self.done,
-        #     self.direction,
-        #     self.score,
-        #     self.moves_to_get_apple,
-        #     self.just_eat_apple,
-        #     len(apple_positions), # how many apples are on the board 
-        #     num_alive_snakes,
-        #     len(snake_players) # total num of how many snakes are on board
-        #    ] + sight_obs \
-        #  + list(self.prev_actions)
-
-        # for multiple snakes, might have to include a done obs
-        # not sure how to render that out atm 
-        # 2 players is ez cause of terminal condition
-
-
-        # print('single obs len', len(obs))
-        # print('sight len', len(sight_obs))
 
         # dir_string = ['left', 'right', 'up', 'down', 'leftUP', 'leftDOWN', 'rightUP', 'rightDOWN'] # for testing 
         # factor = 2 + len(snake_players)
@@ -347,42 +310,35 @@ class PlayerData():
         # go the to position we need in the direction
         curr_pos = [snake_head[0] + direction[0], snake_head[1] + direction[1]]
         
-        # this is for swapping positions at the end 
-        # we swap to always have this snake be in a static position in the array
-        this_snake_pos = -1
 
         while not self._isCollidingWall(curr_pos):
-            norm_distance = self.normalize_val(distance, -1, self.size - 1)
+            norm_distance = self.normalize_val(distance, -1, self.size)
             if not food_found and self._isCollidingApple(curr_pos, apple_positions):
                 food_found = True
                 look[0] = norm_distance
             
-
-            # replacing this with the for loop below 
-            # if not body_found and self._isCollidingSnake(curr_pos):
-            #     body_found = True
-            #     look[1] = distance
-
-
             # looking for other snakes
-            # start index at 2 bc of look
-            # can subtract 2 from other_snakes_found bc that is just for other snakes
-            for idx, other_snake in enumerate(other_snakes, 2):
+            # start index at 3 bc of look
+            # current snake will always be in position 2
+            counter = 0
+            for idx, other_snake in enumerate(other_snakes, 3):
+
                 # making sure this isnt the same snake
                 if self.getID() != other_snake.getID():
                     # seeing if we collide with another snake and have not seen it yet
-                    if not other_snakes_found[idx - 2] and curr_pos in other_snake.getPosition():
-                        look[idx] = norm_distance
-                        other_snakes_found[idx - 2] = True
-                
+                    if not other_snakes_found[idx - 3] and curr_pos in other_snake.getPosition():
+                        look[idx - counter] = norm_distance
+                        # this_snake_pos = idx
+                        other_snakes_found[idx - 3] = True
+                        
                 # if we are the same snake, dont count head
-                # WILL HAVE TO MAKE SURE THE THIS IS IN THE SAME POSITION
-                # JUST SWAP POSTIIONS AT THE END 
+                # current snake will always be in position 2
                 elif self.getID() == other_snake.getID():
-                    if not other_snakes_found[idx - 2] and curr_pos in other_snake.getPosition()[1:]:
-                        look[idx] = norm_distance
-                        this_snake_pos = idx
-                        other_snakes_found[idx - 2] = True
+                    if curr_pos in other_snake.getPosition()[1:]:
+                        look[2] = norm_distance
+                        other_snakes_found[idx - 3] = True
+                
+                counter += 1
 
 
             # increment the position 
@@ -391,20 +347,14 @@ class PlayerData():
 
             distance += 1
 
-        norm_distance = self.normalize_val(distance, -1, self.size - 1)
+        norm_distance = self.normalize_val(distance, -1, self.size)
         # wall distance
         look[1] = norm_distance
-
-        # swapping pos 2 with this snakes body 
-        # dont need to swap if same 
-        if this_snake_pos != 2:
-            look[2], look[this_snake_pos] = look[this_snake_pos], look[2]
 
         return look
 
 
     def _isCollidingWall(self, position: list) -> bool:
-        # if we are outside of the walls
         if position[0] >= self.size or \
             position[0] < 0 or \
             position[1] >= self.size or \
@@ -431,7 +381,7 @@ class PlayerData():
 
     def normalize(self, arr: list, min_val: int, max_val: int) -> list:
         # normalize values between -1 and 1 
-        t_min = -1
+        t_min = 0
         t_max = 1
 
         norm_arr = []
@@ -444,7 +394,9 @@ class PlayerData():
 
 
     def normalize_val(self, val: int, min_val: int, max_val: int) -> int:
-        return (((val - min_val) * 2) / max_val) + -1
+        return (((val - min_val) * 1) / max_val) + 0
+        
+        # return (((val - min_val) * 2) / max_val) + -1
 
 
     # def normalize_val(self, val: int, min_val: int, max_val: int) -> int:
