@@ -25,13 +25,13 @@ class Snake(Env):
         # BGR !!!!
         self.colors = {
             'red': [[122, 122, 255], [98, 98, 204], [73, 73, 153]],
+            'aqua': [[223, 255, 122], [176, 201, 96], [134, 153, 73]],
+            'mint': [[159, 255, 122], [128, 204, 98], [96, 153, 73]],
+            'cobalt': [[255, 122, 125], [204, 98, 99], [153, 73, 75]],
             'orange': [[122, 178, 255], [98, 142, 204], [73, 106, 153]],
             'yellow': [[122, 217, 255], [98, 174, 204], [73, 131, 153]],
             'lime': [[122, 255, 212], [98, 204, 170], [73, 153, 128]],
-            'mint': [[159, 255, 122], [128, 204, 98], [96, 153, 73]],
-            'aqua': [[223, 255, 122], [176, 201, 96], [134, 153, 73]],
             'blue': [[255, 191, 122], [204, 153, 98], [153, 114, 73]], 
-            'cobalt': [[255, 122, 125], [204, 98, 99], [153, 73, 75]],
             'purple': [[255, 122, 205], [204, 98, 163], [153, 73, 122]],
             'pink': [[226, 122, 255], [181, 98, 204], [136, 73, 153]], 
             'soulless': [[204, 204, 204], [153, 153, 153], [102, 102, 102], [51, 51, 51]]
@@ -43,28 +43,24 @@ class Snake(Env):
         self.timestep = timestep
         self.num_players = num_players
         
+        self.total_moves = 0
         # get the whole matrix for the game; used for random apple 
         self.whole_coord = np.mgrid[0:size, 0:size].reshape(2, -1).T.tolist()
 
-        # calculating observation shape 
-        obs_size = 12
-        directions_size = 3 * 8 + (num_players - 1) * 8
-        # prev_action_size = self.size ** 2 + 1 # could also be 100 for health ?? 
-        prev_action_size = 30  
+        # # calculating observation shape 
+        # obs_size = 13
+        # directions_size = 3 * 8 + (num_players - 1) * 8
+        # # prev_action_size = self.size ** 2 + 1 # could also be 100 for health ?? 
+        # prev_action_size = 30  
 
-        total_size = obs_size + directions_size + prev_action_size
-
-        # high value could either be size of board or health 
-        if size ** 2 > 100:
-            high = size ** 2
-        else:
-            high = 100
+        # total_size = obs_size + directions_size + prev_action_size
+        # shape = (total_size * num_players,) # for single AND MULTI
 
         # only need left/right/up because of local direction 
         self.action_space = spaces.Discrete(3)
         # self.action_space = spaces.MultiDiscrete([3] * num_players)
         
-        shape = (total_size * num_players,) # for single AND MULTI
+        shape = self.getOBSShape()
         self.observation_space = spaces.Box(low=-1, high=1, shape=shape, dtype=np.float16) # change later 
 
 
@@ -72,6 +68,8 @@ class Snake(Env):
     # there is no guarantee that another  apple will spawn if we eat 
     # if there is only 1 food on the board when we eat, we must generate another one 
     def step(self, actions: np.ndarray):
+        
+        self.total_moves += 1
 
         obs = list()
         rewards = list()
@@ -109,6 +107,16 @@ class Snake(Env):
                 # make sure the snake isnt dead
                 if not player1.isDone():
                     if player1.getID() != player2.getID() and not player2.isDone():
+                        
+                        # # not sure if this works with more than 2 snakes
+                        # # checking to see if both snakes ate an apple 
+                        # if (0 < rewards[idx1] <= 1) and (0 < rewards[idx2] <= 1):
+                        #     pass
+                        # # zero sum reward
+                        # elif 0 < rewards[idx1] <= 1:
+                        #     rewards[idx2] = -rewards[idx1]
+
+
                         snake_collision, collided_with_head = player1.collideWithOtherSnakes(player2)
                         # if we collide with another snake and its a head collision 
                         if snake_collision and collided_with_head:
@@ -122,8 +130,8 @@ class Snake(Env):
                             # same length, both players would lose 
                             # this is also the only one that matters in 1v1
                             elif player1_score == player2_score:
-                                rewards[idx1] = -5
-                                rewards[idx2] = -5
+                                rewards[idx1] = -3
+                                rewards[idx2] = -3
                                 player1.setDone(True)
                                 player2.setDone(True)
                             
@@ -136,21 +144,6 @@ class Snake(Env):
                             rewards[idx1] = -3
                             player1.setDone(True)
 
-        # zero sum reward
-        # so if a snake eats an apple, that is bad for the other snakes 
-        # do i need to account for if a snake wins? or is the reward for dying enough
-        # not sure if this works with more than 2 snakes
-        
-        for idx1, player1 in enumerate(self.snake_players):
-            for idx2, player2 in enumerate(self.snake_players):
-                if player1.getID() != player2.getID():
-                    # if both players got an apple, do we subtract? 
-                    if rewards[idx1] == 1 and rewards[idx2] == 1:
-                        pass
-                    # if the snake ate an apple, the other snake gets penalized 
-                    elif rewards[idx1] == 1:
-                        rewards[idx2] -= 1
-
 
         obs = self._GetOBS()
         # print('obs shape', np.shape(obs))
@@ -160,14 +153,13 @@ class Snake(Env):
         # check if all snakes are dead 
         done = False
 
+        snake_dones = [player.isDone() for player in self.snake_players]
         # if all snakes are dead [True, True, True] done is true
-        if all(player.isDone() is True for player in self.snake_players):
+        if all(snake_dones):
             done = True
 
         # check if we had more than 2 snakes and 1 is alive / rest are dead
         elif self.num_players >= 2:
-
-            snake_dones = [player.isDone() for player in self.snake_players]
             
             # num of alive snakes
             alive_snakes = snake_dones.count(False)
@@ -177,12 +169,11 @@ class Snake(Env):
                 # make sure we reward the snake for winning 
                 for idx, player in enumerate(self.snake_players):
                     if not player.isDone():
-                        rewards = [-5] * self.num_players
-                        rewards[idx] = 5
+                        rewards = [-3] * self.num_players
+                        rewards[idx] = 3
                 done = True
         
         info = dict()
-
         return obs, rewards, done, info
 
 
@@ -193,21 +184,23 @@ class Snake(Env):
         self._GetRandomSnakePositions()
 
         self.apple_positions = list()
-        # need to call the apple twice bc thats how it is in the game
-        # game always starts with 2 apples for 7x7 
-        # 3 for 11x11
+
+        # starting with 3 apples in the game
+        # actual battlesnake starts with one in the middle and one next to each snake (1v1)
         self._GetRandomApplePosition()
         self._GetRandomApplePosition()
-        if self.size == 11:
-            self._GetRandomApplePosition()
+        self._GetRandomApplePosition()
 
         return self._GetOBS()
 
 
+    def getOBSShape(self):
+        return np.shape(self.reset()[0])
+
+
     def _GetOBS(self):
 
-
-        # cache all player obs and then create list? 
+        # cache all player obs and then create list
         all_player_obs = dict()
         for player in self.snake_players:
             all_player_obs[player.getID()] = player.getOBS(self.snake_players, self.apple_positions)
@@ -243,7 +236,7 @@ class Snake(Env):
 
 
     def _GetRandomSnakePositions(self):
-        # easy to see what psots have been taken already
+        # easy to see what spots have been taken already
         # taken_positions = list()
         random_start_pos = random.choice(self.starting_positions)
         # loop through all players and set their positiion randomly
@@ -304,7 +297,7 @@ class Snake(Env):
 
                 cv2.putText(
                     img=img, 
-                    text=f'Agent {i} Len: {player.getScore()}', 
+                    text=f'Agent {i} Len: {player.getScore()} {player.getHealth()}', 
                     org=( ((self.size) * renderer), renderer * i), 
                     fontFace=cv2.FONT_HERSHEY_DUPLEX, 
                     fontScale=.8, 
@@ -315,7 +308,7 @@ class Snake(Env):
             else:
                 cv2.putText(
                     img=img, 
-                    text=f'Agent {i} Len: {player.getScore()} died', 
+                    text=f'Agent {i} Len: {player.getScore()} {player.getHealth()} died', 
                     org=( ((self.size) * renderer), renderer * i), 
                     fontFace=cv2.FONT_HERSHEY_DUPLEX, 
                     fontScale=.8, 

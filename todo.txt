@@ -126,3 +126,7 @@ if a snake dies and another snake runs into the one thats dead, does he also die
 # clip values between 0 and 1 
 look at obs 
 # add how many moves each snake has to render screen
+
+# more reward for less total moves 
+    * have var for max moves and update 
+# observation doesnt include other snakes head? trying to fix them not going for each other 

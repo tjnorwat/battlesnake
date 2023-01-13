@@ -1,4 +1,5 @@
 from SnakeEnvironment import Snake
+from sb3_contrib import RecurrentPPO
 from multi_instance_env import SB3MultiInstanceEnv
 from stable_baselines3 import PPO
 from stable_baselines3.ppo import MlpPolicy
@@ -18,7 +19,7 @@ def getGame2():
     return Snake(num_players=2)
 
 
-env = SB3MultiInstanceEnv(getGame2, 12)
+env = SB3MultiInstanceEnv(getGame2, 16)
 
 time_now = int(time.time())
 
@@ -37,22 +38,29 @@ logdir = f'logs/{time_now}'
 # )
 
 policy_kwargs={
-    'activation_fn': torch.nn.ReLU,
-    'net_arch': [256, 256]
+    'net_arch': [256, 256, dict(pi=[256, 256], vf=[256, 256])]
     }    
+
 
 model = PPO(
     MlpPolicy,
     env,
     verbose=1,
-    batch_size=4096,             # Batch size as high as possible within reason
+    batch_size=2048,             # Batch size as high as possible within reason
     tensorboard_log=logdir,      # `tensorboard --logdir out/logs` in terminal to see graphs
     device="cpu",
-    policy_kwargs={
-        'net_arch': [256, 256]
-    }          
+    policy_kwargs=policy_kwargs
 )
 
+
+# model = RecurrentPPO(
+#     'MlpLstmPolicy',
+#     env,
+#     verbose=1,
+#     batch_size=2048,
+#     tensorboard_log=logdir,
+#     device='cuda'
+#     )
 
 # model = PPO(
 #     MlpPolicy,
@@ -72,6 +80,7 @@ model = PPO(
 
 
 TIMESTEPS = 25_000
+# TIMESTEPS = 100_000
 iters = 0
 while True:
     iters += 1

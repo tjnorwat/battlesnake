@@ -40,6 +40,10 @@ class PlayerData():
         self.ID = ID
         self.size = size
 
+        # normalization range
+        self.t_min = -1
+        self.t_max = 1
+
         # get the whole matrix for the game; used for random apple 
         self.whole_coord = np.mgrid[0:size, 0:size].reshape(2, -1).T.tolist()
 
@@ -84,6 +88,9 @@ class PlayerData():
 
     def isDone(self) -> bool:
         return self.done
+
+    def getHealth(self) -> bool:
+        return self.health
 
     # might have to return whether or not we eat apple, reward, done
     # returning whether we just ate apple for reward, if we are done (collide with self or wall), and the apple to delete if we ate one
@@ -155,8 +162,8 @@ class PlayerData():
                 self.max_score = self.score
 
             # should reward not be based on how many moves it takes ? 
-            reward = 1
-            # reward = (1 - (self.moves_to_get_apple / 100)) * .8
+            # reward = 1
+            reward = (1 - (self.moves_to_get_apple / 100))
 
             self.moves_to_get_apple = 0
             self.health = 100
@@ -226,6 +233,12 @@ class PlayerData():
 
     def getOBS(self, snake_players: List[PlayerData], apple_positions: List[list]) -> list:
 
+        # if self.ID == 0:
+        #     return [1, 2]
+        # elif self.ID == 1:
+        #     return [3, 4]
+
+
         snake_head = self.getHead()
 
         sight_obs = list()
@@ -239,30 +252,41 @@ class PlayerData():
             sight_obs += self._lookInDirection(direction, snake_head, snake_players, apple_positions)
          
         num_alive_snakes = 0
+        is_biggest_snake = 0
+
         for player in snake_players:
             if not player.isDone():
                 num_alive_snakes += 1
+            
+            # seeing if a snake is the longest on the board
+            if player.getID() != self.getID():
+                if self.getScore() > player.getScore():
+                    is_biggest_snake = 1
+                else:
+                    is_biggest_snake = 0
 
 
         norm_head = self.normalize(self.getHead(), 0, self.size - 1)
         norm_tail = self.normalize(self.getTail(), 0, self.size - 1)
         norm_direction = self.normalize_val(self.direction, 0, 3)
-        norm_score = self.normalize_val(self.score, 0, self.score ** 2)
+        norm_score = self.normalize_val(self.score, 3, self.score ** 2) # snake length
         norm_moves_to_get_apple = self.normalize_val(self.moves_to_get_apple, 0, 100)
         norm_num_apples_on_board = self.normalize_val(len(apple_positions), 1, self.size ** 2 - 3 * len(snake_players)) # always will be 1 apple 
-        norm_num_snakes_on_board = self.normalize_val(len(snake_players), 0, len(snake_players)) # all snakes can die on a single  turn 
+        # norm_num_snakes_on_board = self.normalize_val(len(snake_players), 0, len(snake_players)) # all snakes can die on a single  turn 
         norm_alive_snakes = self.normalize_val(num_alive_snakes, 0, len(snake_players))
-        
+
+        # more reward for less moves made at end game 
+
         normalized_obs = norm_head + \
             norm_tail + \
             [norm_direction,
-            self.done,
+            int(self.done),
             norm_score,
             norm_moves_to_get_apple,
             self.just_eat_apple,
             norm_num_apples_on_board,
             norm_alive_snakes,
-            norm_num_snakes_on_board
+            is_biggest_snake
             ] + sight_obs + \
             list(self.prev_actions)
 
@@ -288,7 +312,6 @@ class PlayerData():
 
         # print()
 
-        # normalized_obs = [1]
         return normalized_obs
 
 
@@ -322,13 +345,17 @@ class PlayerData():
             # current snake will always be in position 2
             counter = 0
             for idx, other_snake in enumerate(other_snakes, 3):
+                
+                # TODO See if we are looking at the head/tail/body
+                # head = 1 
+                # tail = -1
+                # body/neither = 0
 
                 # making sure this isnt the same snake
                 if self.getID() != other_snake.getID():
                     # seeing if we collide with another snake and have not seen it yet
                     if not other_snakes_found[idx - 3] and curr_pos in other_snake.getPosition():
                         look[idx - counter] = norm_distance
-                        # this_snake_pos = idx
                         other_snakes_found[idx - 3] = True
                         
                 # if we are the same snake, dont count head
@@ -381,31 +408,33 @@ class PlayerData():
 
     def normalize(self, arr: list, min_val: int, max_val: int) -> list:
         # normalize values between -1 and 1 
-        t_min = 0
-        t_max = 1
+        # t_min = 0
+        # t_max = 5
 
         norm_arr = []
-        diff = t_max - t_min
+        diff = self.t_max - self.t_min
         diff_arr = max_val - min_val
         for i in arr:
-            temp = (((i - min_val)*diff)/diff_arr) + t_min
+            temp = (((i - min_val)*diff)/diff_arr) + self.t_min
             norm_arr.append(temp)
         return norm_arr
 
 
-    def normalize_val(self, val: int, min_val: int, max_val: int) -> int:
-        return (((val - min_val) * 1) / max_val) + 0
-        
-        # return (((val - min_val) * 2) / max_val) + -1
-
-
     # def normalize_val(self, val: int, min_val: int, max_val: int) -> int:
-    #     t_min = -1
-    #     t_max = 1
+        
+    #     return (((val - min_val) * 5) / max_val) + 0
 
-    #     diff = t_max - t_min
-    #     diff_val = max_val
-    #     return (((val - min_val)*diff)/diff_val) + t_min
+    #     # return (((val - min_val) * 1) / max_val) + 0
+    #     # return (((val - min_val) * 2) / max_val) + -1
+
+
+    def normalize_val(self, val: int, min_val: int, max_val: int) -> int:
+        # t_min = -1
+        # t_max = 1
+
+        diff = self.t_max - self.t_min
+        diff_val = max_val - min_val
+        return (((val - min_val)*diff)/diff_val) + self.t_min
 
 
     def __str__(self):

@@ -1,6 +1,8 @@
 import os
+import numpy as np
 import time
 import argparse
+from sb3_contrib import RecurrentPPO
 from SnakeEnvironment import Snake
 from stable_baselines3 import PPO
 from single_instance_env import SB3SingleInstanceEnv
@@ -31,7 +33,9 @@ def GetNewestModel(env, recent_timestep=0, recent_file=0):
     # print('model path', model_path)
     try:
         return PPO.load(model_path, env=env, device='cuda')
+        # return RecurrentPPO.load(model_path, env=env, device='cuda')
     except:
+        time.sleep(1)
         return GetNewestModel(env, recent_timestep, recent_file)
 
 if __name__ == '__main__':
@@ -41,16 +45,16 @@ if __name__ == '__main__':
     parser.add_argument('-t','--timestep', type=int, default=0)
     args = parser.parse_args()
 
-    snake = Snake(num_players=2)
+    # snake = Snake(num_players=2)
 
-    env = SB3SingleInstanceEnv(snake)
-    model = GetNewestModel(env=env, recent_timestep=args.timestep)
-
-    # def getGame():
-    #     return Snake(num_players=2)
-
-    # env = SB3MultiInstanceEnv(getGame, 1)
+    # env = SB3SingleInstanceEnv(snake)
     # model = GetNewestModel(env=env, recent_timestep=args.timestep)
+
+    def getGame():
+        return Snake(num_players=2)
+
+    env = SB3MultiInstanceEnv(getGame, 1)
+    model = GetNewestModel(env=env, recent_timestep=args.timestep)
 
 
 
@@ -58,18 +62,19 @@ if __name__ == '__main__':
     obs = env.reset()
     env.render(renderer=100)
     i = 0
+
+    lstm_states = None
+    num_envs = 2
+    episode_starts = np.ones((num_envs,), dtype=bool)
     while True:
-        action, _states = model.predict(obs, deterministic=True)
+        action, lstm_states = model.predict(obs, deterministic=True)
+        # action, lstm_states = model.predict(obs, state=lstm_states, episode_start=episode_starts, deterministic=True)
         obs, rewards, done, info = env.step(action)
-        # print(rewards)
+        episode_starts = [done] * num_envs
         env.render(renderer=100)
         if done:
             i += 1
             if i % 5 == 0: 
                 model = GetNewestModel(env=env, recent_timestep=args.timestep)
             time.sleep(1.5)
-            # if info['won']:
-            #     with open('dones.txt', 'a+') as f:
-            #         f.writelines(f'GAME COMPLETED AT {time.strftime("%b %d %Y %I:%M %p")} WITH SIZE {args.size}\n')
-
             obs = env.reset()

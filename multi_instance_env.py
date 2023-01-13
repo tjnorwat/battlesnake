@@ -27,7 +27,7 @@ class SB3MultiInstanceEnv(DummyVecEnv):
             obs = env.reset()
             flat_obs += obs
 
-        return np.array(flat_obs)
+        return np.asarray(flat_obs)
 
 
     def step_async(self, actions: np.ndarray) -> None:
@@ -54,7 +54,7 @@ class SB3MultiInstanceEnv(DummyVecEnv):
             flat_dones += [done] * n_agents
             flat_infos += [info] * n_agents
 
-        return np.array(flat_obs), np.array(flat_rews), np.array(flat_dones), flat_infos 
+        return np.asarray(flat_obs), np.array(flat_rews), np.array(flat_dones), flat_infos 
 
 
     def seed(self, seed: Optional[int] = None) -> List[Union[None, int]]:
