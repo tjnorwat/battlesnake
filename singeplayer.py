@@ -31,7 +31,7 @@ while True:
     
     obs, rewards, done, info = player.step(actions)
     player.render(renderer=100)
-    print(rewards)
+    # print(rewards)
 
     # print('obs len', len(obs))
     # print('rewards ', rewards)

@@ -8,7 +8,6 @@ class Snake(Env):
 
     def __init__(self, size=7, is_human=False, time_between_moves=100, timestep=None, num_players=1):
         super(Snake, self).__init__()
-        # super().__init__()
 
         # starting positions for the snakes 
         self.starting_positions = [
@@ -47,18 +46,8 @@ class Snake(Env):
         # get the whole matrix for the game; used for random apple 
         self.whole_coord = np.mgrid[0:size, 0:size].reshape(2, -1).T.tolist()
 
-        # # calculating observation shape 
-        # obs_size = 13
-        # directions_size = 3 * 8 + (num_players - 1) * 8
-        # # prev_action_size = self.size ** 2 + 1 # could also be 100 for health ?? 
-        # prev_action_size = 30  
-
-        # total_size = obs_size + directions_size + prev_action_size
-        # shape = (total_size * num_players,) # for single AND MULTI
-
         # only need left/right/up because of local direction 
         self.action_space = spaces.Discrete(3)
-        # self.action_space = spaces.MultiDiscrete([3] * num_players)
         
         shape = self.getOBSShape()
         self.observation_space = spaces.Box(low=-1, high=1, shape=shape, dtype=np.float16) # change later 
@@ -75,9 +64,6 @@ class Snake(Env):
         rewards = list()
         apples_to_delete = list()
 
-        # print('ACTIONS gym', actions)
-        # if not isinstance(actions, list):
-        #     actions = [actions]
         for action, player in zip(actions, self.snake_players):
             reward, apple_to_delete = player.MoveSnake(action, self.apple_positions)
             if apple_to_delete:
@@ -321,87 +307,6 @@ class Snake(Env):
         # drawing the apple
         for apple_position in self.apple_positions:
             cv2.rectangle(img=img, pt1=(apple_position[0] * renderer, (self.size - apple_position[1]) * renderer - renderer), pt2=(apple_position[0] * renderer + renderer, (self.size - apple_position[1]) * renderer), color=self.colors['red'][1], thickness=-1)
-
-        # display for each snake 
-        # * length 
-        # * how many moves it has left/done
-
-
-        # # drawing the snake
-        # head = self.snake_positions[0]
-        # cv2.rectangle(img=img, pt1=(head[0] * renderer, (self.size - head[1]) * renderer - renderer), pt2=(head[0] * renderer + renderer, (self.size - head[1]) * renderer), color=(255,0,0), thickness=-1)
-       
-        # for position in self.snake_positions[1:-1]:
-        #     cv2.rectangle(img=img, pt1=(position[0] * renderer, (self.size - position[1]) * renderer - renderer), pt2=(position[0] * renderer + renderer, (self.size - position[1]) * renderer), color=(0,255,0), thickness=-1)
-
-        # if len(self.snake_positions) > 1:
-        #     tail = self.snake_positions[-1]
-        #     cv2.rectangle(img=img, pt1=(tail[0] * renderer, (self.size - tail[1]) * renderer - renderer), pt2=(tail[0] * renderer + renderer, (self.size - tail[1]) * renderer), color=(255,255,255), thickness=-1)
-
-        # # drawing the apple
-        # for apple_position in self.apple_positions:
-        #     cv2.rectangle(img=img, pt1=(apple_position[0] * renderer, (self.size - apple_position[1]) * renderer - renderer), pt2=(apple_position[0] * renderer + renderer, (self.size - apple_position[1]) * renderer), color=(0,0,255), thickness=-1)
-
-
-        # cv2.putText(
-        #     img=img, 
-        #     text=f'Length: {self.score}', 
-        #     org=( ((self.size) * renderer), renderer * 1), 
-        #     fontFace=cv2.FONT_HERSHEY_DUPLEX, 
-        #     fontScale=.8, 
-        #     color=(255, 255, 255), 
-        #     thickness=2
-        # )
-
-        # cv2.putText(
-        #     img=img, 
-        #     text=f'Total Moves: {self.total_moves}', 
-        #     org=( ((self.size) * renderer), renderer * 2), 
-        #     fontFace=cv2.FONT_HERSHEY_DUPLEX, 
-        #     fontScale=.8, 
-        #     color=(255, 255, 255), 
-        #     thickness=2
-        # )
-
-        # cv2.putText(
-        #     img=img, 
-        #     text=f'Min Moves: {self.min_moves}', 
-        #     org=( ((self.size) * renderer), renderer * 3), 
-        #     fontFace=cv2.FONT_HERSHEY_DUPLEX, 
-        #     fontScale=.8, 
-        #     color=(255, 255, 255), 
-        #     thickness=2
-        # )
-
-        # cv2.putText(
-        #     img=img, 
-        #     text=f'Best len: {self.max_score}', 
-        #     org=( ((self.size) * renderer), renderer * 4), 
-        #     fontFace=cv2.FONT_HERSHEY_DUPLEX, 
-        #     fontScale=.8, 
-        #     color=(255, 255, 255), 
-        #     thickness=2
-        # )
-
-        # cv2.putText(
-        #     img=img, 
-        #     text=f'Board size: {self.size}x{self.size}', 
-        #     org=( ((self.size) * renderer), renderer * 5), 
-        #     fontFace=cv2.FONT_HERSHEY_DUPLEX, 
-        #     fontScale=.8, 
-        #     color=(255, 255, 255), 
-        #     thickness=2
-        # )
-
-        # cv2.putText(
-        #     img=img, 
-        #     text=f'Times won: {self.times_won}', 
-        #     org=( ((self.size) * renderer), renderer * 6), 
-        #     fontFace=cv2.FONT_HERSHEY_DUPLEX, 
-        #     fontScale=.8, 
-        #     color=(255, 255, 255), 
-        #     thickness=2
-        # )
 
         return img
 

@@ -238,7 +238,6 @@ class PlayerData():
         # elif self.ID == 1:
         #     return [3, 4]
 
-
         snake_head = self.getHead()
 
         sight_obs = list()
@@ -248,6 +247,7 @@ class PlayerData():
         # * wall
         # * itself
         # * another snakes * how many players there are
+        # as well as if we are looking at a snakes head/tail
         for direction in self.directions:
             sight_obs += self._lookInDirection(direction, snake_head, snake_players, apple_positions)
          
@@ -320,8 +320,7 @@ class PlayerData():
     def _lookInDirection(self, direction: int, snake_head: list, other_snakes: List[PlayerData], apple_positions: List[list]) -> list:
         
         # changed to 2 because body found will be calculated in the for loop
-        look = [-1] * (2 + len(other_snakes))
-
+        look = [-1] * (4 + len(other_snakes))
         food_found = False
 
         # need to check the first time we come across a specific snake
@@ -341,31 +340,50 @@ class PlayerData():
                 look[0] = norm_distance
             
             # looking for other snakes
-            # start index at 3 bc of look
+            # start index at 4 bc of look
             # current snake will always be in position 2
             counter = 0
-            for idx, other_snake in enumerate(other_snakes, 3):
+            idx = 4
+            snakes_found_idx = 0 
+            for other_snake in other_snakes:
                 
-                # TODO See if we are looking at the head/tail/body
-                # head = 1 
-                # tail = -1
-                # body/neither = 0
-
                 # making sure this isnt the same snake
                 if self.getID() != other_snake.getID():
                     # seeing if we collide with another snake and have not seen it yet
-                    if not other_snakes_found[idx - 3] and curr_pos in other_snake.getPosition():
-                        look[idx - counter] = norm_distance
-                        other_snakes_found[idx - 3] = True
+                    if not other_snakes_found[snakes_found_idx] and curr_pos in other_snake.getPosition():
+                        look[idx - 1 - counter] = norm_distance 
+                        
+                        # See if we are looking at the head/tail/body
+                        # head = 1 
+                        # tail = 0
+                        # body/neither = -1
+                        if curr_pos == other_snake.getPosition()[0]:
+                            look[idx - counter] = 1
+                        elif curr_pos == other_snake.getPosition()[-1]:
+                            look[idx - counter] = 0
+                        else:
+                            look[idx - counter] = -1
+                        other_snakes_found[snakes_found_idx] = True
                         
                 # if we are the same snake, dont count head
                 # current snake will always be in position 2
                 elif self.getID() == other_snake.getID():
                     if curr_pos in other_snake.getPosition()[1:]:
+                        # distance for this snake body 
                         look[2] = norm_distance
-                        other_snakes_found[idx - 3] = True
+
+                        # if what we are looking at is the tail 
+                        # tail = 1
+                        # body/head?/nothing = -1
+                        if curr_pos == other_snake.getPosition()[-1]:
+                            look[3] = 1
+                        else:
+                            look[3] = -1
+                        other_snakes_found[snakes_found_idx] = True
                 
+                idx += 2
                 counter += 1
+                snakes_found_idx += 1
 
 
             # increment the position 
@@ -407,9 +425,6 @@ class PlayerData():
 
 
     def normalize(self, arr: list, min_val: int, max_val: int) -> list:
-        # normalize values between -1 and 1 
-        # t_min = 0
-        # t_max = 5
 
         norm_arr = []
         diff = self.t_max - self.t_min
@@ -419,18 +434,7 @@ class PlayerData():
             norm_arr.append(temp)
         return norm_arr
 
-
-    # def normalize_val(self, val: int, min_val: int, max_val: int) -> int:
-        
-    #     return (((val - min_val) * 5) / max_val) + 0
-
-    #     # return (((val - min_val) * 1) / max_val) + 0
-    #     # return (((val - min_val) * 2) / max_val) + -1
-
-
     def normalize_val(self, val: int, min_val: int, max_val: int) -> int:
-        # t_min = -1
-        # t_max = 1
 
         diff = self.t_max - self.t_min
         diff_val = max_val - min_val
