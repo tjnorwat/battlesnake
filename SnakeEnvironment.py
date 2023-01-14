@@ -173,9 +173,8 @@ class Snake(Env):
 
         # starting with 3 apples in the game
         # actual battlesnake starts with one in the middle and one next to each snake (1v1)
-        self._GetRandomApplePosition()
-        self._GetRandomApplePosition()
-        self._GetRandomApplePosition()
+        for _ in range(3):
+            self._GetRandomApplePosition()
 
         return self._GetOBS()
 
@@ -238,13 +237,13 @@ class Snake(Env):
 
 
     # this is for communicating with the battlesnake API 
-    def returnActionFromDirection(self):
-        
-        if self.direction == 0:
+    def returnActionFromDirection(self, player_idx):
+        player = self.snake_players[player_idx]
+        if player.direction == 0:
             action = 'left'
-        elif self.direction == 1:
+        elif player.direction == 1:
             action = 'right'
-        elif self.direction == 2:
+        elif player.direction == 2:
             action = 'up'
         else:
             action = 'down'
@@ -257,7 +256,13 @@ class Snake(Env):
 
     # figure out how to change these 
     def SetSnakePosition(self, snake_positions):
-        self.snake_positions = snake_positions
+        for player, position in zip(self.snake_players, snake_positions):
+            player.SetPosition(position)
+
+
+    def SetLength(self, snake_lengths):
+        for player, length in zip(self.snake_players, snake_lengths):
+            player.setScore(length)
 
 
     def _GetRenderImg(self, renderer=100):

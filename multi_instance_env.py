@@ -13,7 +13,7 @@ class SB3MultiInstanceEnv(DummyVecEnv):
         self.envs = [env_fns() for _ in range(num_envs)]
 
         self.n_agents_per_env = [m.num_players for m in self.envs]
-        self.num_envs = sum(self.n_agents_per_env) 
+        self.num_envs = sum(self.n_agents_per_env)
 
         observation_space, action_space = self.envs[0].observation_space, self.envs[0].action_space
 

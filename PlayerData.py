@@ -83,6 +83,9 @@ class PlayerData():
     def getScore(self) -> int:
         return self.score
 
+    def setScore(self, score:int):
+        self.score=score
+
     def setDone(self, done: bool):
         self.done = done
 
@@ -91,6 +94,10 @@ class PlayerData():
 
     def getHealth(self) -> bool:
         return self.health
+
+    def setHealth(self, health):
+        self.health = health
+
 
     # might have to return whether or not we eat apple, reward, done
     # returning whether we just ate apple for reward, if we are done (collide with self or wall), and the apple to delete if we ate one
@@ -269,11 +276,10 @@ class PlayerData():
         norm_head = self.normalize(self.getHead(), 0, self.size - 1)
         norm_tail = self.normalize(self.getTail(), 0, self.size - 1)
         norm_direction = self.normalize_val(self.direction, 0, 3)
-        norm_score = self.normalize_val(self.score, 3, self.score ** 2) # snake length
-        norm_moves_to_get_apple = self.normalize_val(self.moves_to_get_apple, 0, 100)
+        norm_score = self.normalize_val(self.score, 3, self.size ** 2 - 3 * len(snake_players)) # snake length
+        norm_health = self.normalize_val(self.health, 0, 100)
         norm_num_apples_on_board = self.normalize_val(len(apple_positions), 1, self.size ** 2 - 3 * len(snake_players)) # always will be 1 apple 
-        # norm_num_snakes_on_board = self.normalize_val(len(snake_players), 0, len(snake_players)) # all snakes can die on a single  turn 
-        norm_alive_snakes = self.normalize_val(num_alive_snakes, 0, len(snake_players))
+        norm_alive_snakes = self.normalize_val(num_alive_snakes, 0, len(snake_players)) # all snakes can die on a single turn
 
         # more reward for less moves made at end game 
 
@@ -282,7 +288,7 @@ class PlayerData():
             [norm_direction,
             int(self.done),
             norm_score,
-            norm_moves_to_get_apple,
+            norm_health,
             self.just_eat_apple,
             norm_num_apples_on_board,
             norm_alive_snakes,
@@ -361,8 +367,7 @@ class PlayerData():
                             look[idx - counter] = 1
                         elif curr_pos == other_snake.getPosition()[-1]:
                             look[idx - counter] = 0
-                        else:
-                            look[idx - counter] = -1
+
                         other_snakes_found[snakes_found_idx] = True
                         
                 # if we are the same snake, dont count head
@@ -377,8 +382,7 @@ class PlayerData():
                         # body/head?/nothing = -1
                         if curr_pos == other_snake.getPosition()[-1]:
                             look[3] = 1
-                        else:
-                            look[3] = -1
+
                         other_snakes_found[snakes_found_idx] = True
                 
                 idx += 2

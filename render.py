@@ -7,9 +7,10 @@ from SnakeEnvironment import Snake
 from stable_baselines3 import PPO
 from single_instance_env import SB3SingleInstanceEnv
 from multi_instance_env import SB3MultiInstanceEnv
+import glob
 
 
-def GetNewestModel(env, recent_timestep=0, recent_file=0):
+def GetNewestModel(env, recent_timestep=0, recent_file=0, device='cuda'):
 
     if not recent_timestep:
         for f in os.scandir('models'):
@@ -22,19 +23,26 @@ def GetNewestModel(env, recent_timestep=0, recent_file=0):
     models_dir = f'models/{recent_timestep}'
     # models_dir = f'models/'
 
-    if not recent_file:
-        for f in os.scandir(models_dir):
-            f = int(os.path.splitext(f.name)[0])
-            if recent_file < f:
-                recent_file = f
+    # if not recent_file:
+    #     for f in os.scandir(models_dir):
+    #         f = int(os.path.splitext(f.name)[0])
+    #         if recent_file < f:
+    #             recent_file = f
 
+    if not recent_file:
+        list_of_files = glob.glob(models_dir+'/*.zip')
+        recent_file = max(list_of_files, key=os.path.getctime)
+    
+    
     print(f'zip file {recent_file}')
     model_path = f'{models_dir}/{recent_file}'
     # print('model path', model_path)
     try:
-        return PPO.load(model_path, env=env, device='cuda')
+        return PPO.load(recent_file, env=env, device=device)
+        # return PPO.load(model_path, env=env, device=device)
         # return RecurrentPPO.load(model_path, env=env, device='cuda')
-    except:
+    except Exception as e:
+        print(e)
         time.sleep(1)
         return GetNewestModel(env, recent_timestep, recent_file)
 
