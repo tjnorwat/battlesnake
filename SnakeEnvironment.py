@@ -3,6 +3,7 @@ import random
 import numpy as np
 from gym import spaces, Env
 from PlayerData import PlayerData as Player
+from typing import List
 
 class Snake(Env):
 
@@ -236,8 +237,11 @@ class Snake(Env):
             self.snake_players.append(new_player)
 
 
-    # this is for communicating with the battlesnake API 
-    def returnActionFromDirection(self, player_idx):
+    # this section is for communicating with the battlesnake API 
+    # __________________________________________________________
+
+    def getActionFromDirection(self, player_idx):
+        # print(self.snake_players[player_idx].score)
         player = self.snake_players[player_idx]
         if player.direction == 0:
             action = 'left'
@@ -250,19 +254,72 @@ class Snake(Env):
 
         return action
 
-    def SetApplePosition(self, apple_positions):
+
+    def setApplePosition(self, apple_positions):
         self.apple_positions = apple_positions
-    
+
 
     # figure out how to change these 
-    def SetSnakePosition(self, snake_positions):
+    def setSnakePosition(self, snake_positions):
         for player, position in zip(self.snake_players, snake_positions):
             player.SetPosition(position)
 
 
-    def SetLength(self, snake_lengths):
+    def setLength(self, snake_lengths):
         for player, length in zip(self.snake_players, snake_lengths):
             player.setScore(length)
+
+
+    def setHealth(self, snake_healths: List[int]):
+        for player, health in zip(self.snake_players, snake_healths):
+            player.setHealth(health)
+
+
+    def addActionToList(self, player_idx: int, action: int):
+        self.snake_players[player_idx].addToPrevAction(action)
+
+
+    def addDirection(self, player_idx:int, direction: int):
+        self.snake_players[player_idx].setDirection(direction)
+
+
+    def getPlayerDirection(self, player_idx: int):
+        return self.snake_players[player_idx].getDirection()
+
+    # using this to add to prev actions as well as setting direction 
+    def setPlayer(self, player_idx: int, action):
+        self.snake_players[player_idx].MoveSnake(action, self.apple_positions)
+
+
+    def getPlayerHead(self, player_idx: int):
+        return self.snake_players[player_idx].getHead()
+
+
+    def stepPlayer(self, player_idx: int, action: int):
+        self.snake_players[player_idx].MoveSnake(action=action, apple_positions=self.apple_positions)
+
+
+    def getApplePositions(self):
+        return self.apple_positions
+
+
+    def ateApple(self, player_idx: int, ate_apple: int):
+        self.snake_players[player_idx].setAteApple(ate_apple)
+
+    def getAteApple(self, player_idx: int):
+        return self.snake_players[player_idx].getAteApple()
+
+    def getScore(self, player_idx: int):
+        return self.snake_players[player_idx].getScore()
+
+    def setBiggest(self, player_idx: int, is_biggest: int):
+        self.snake_players[player_idx].setBiggestSnake(is_biggest)
+
+    def getBiggest(self, player_idx: int):
+        return self.snake_players[player_idx].getBiggestSnake()
+
+
+    # ________________________________________________________
 
 
     def _GetRenderImg(self, renderer=100):

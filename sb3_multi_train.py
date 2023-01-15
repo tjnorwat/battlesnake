@@ -21,6 +21,7 @@ def getGame2():
 
 
 env = SB3MultiInstanceEnv(getGame2, 16)
+# env = VecMonitor(env)
 # env = VecNormalize(env, norm_obs=False) # ?
 
 time_now = int(time.time())
@@ -39,13 +40,13 @@ model = PPO(
     MlpPolicy,
     env,
     verbose=1,
-    batch_size=4096,
-    n_steps=4096,
-    n_epochs=10,
-    vf_coef=1,
-    ent_coef=.01,
+    batch_size=2048,
+    # n_steps=4096,
+    # n_epochs=10,
+    # vf_coef=1,
+    # ent_coef=.01,
     tensorboard_log=logdir,
-    device="cuda",
+    device="cpu",
     policy_kwargs=policy_kwargs
 )
 

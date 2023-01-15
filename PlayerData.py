@@ -47,6 +47,7 @@ class PlayerData():
         # get the whole matrix for the game; used for random apple 
         self.whole_coord = np.mgrid[0:size, 0:size].reshape(2, -1).T.tolist()
 
+        self.is_biggest_snake = 0
         self.snake_position = list()
         self.is_human = is_human
         self.direction = 2
@@ -97,6 +98,28 @@ class PlayerData():
 
     def setHealth(self, health):
         self.health = health
+
+    def addToPrevAction(self, action):
+        norm_action = self.normalize_val(action, 0, 2)
+        self.prev_actions.append(norm_action)
+
+    def setDirection(self, direction):
+        self.direction = direction
+
+    def getDirection(self):
+        return self.direction
+    
+    def setAteApple(self, ate_apple: int):
+        self.just_eat_apple = ate_apple
+
+    def getAteApple(self):
+        return self.just_eat_apple
+
+    def setBiggestSnake(self, is_biggest: int):
+        self.is_biggest_snake = is_biggest
+
+    def getBiggestSnake(self):
+        return self.is_biggest_snake
 
 
     # might have to return whether or not we eat apple, reward, done
@@ -259,7 +282,7 @@ class PlayerData():
             sight_obs += self._lookInDirection(direction, snake_head, snake_players, apple_positions)
          
         num_alive_snakes = 0
-        is_biggest_snake = 0
+
 
         for player in snake_players:
             if not player.isDone():
@@ -268,9 +291,9 @@ class PlayerData():
             # seeing if a snake is the longest on the board
             if player.getID() != self.getID():
                 if self.getScore() > player.getScore():
-                    is_biggest_snake = 1
+                    self.is_biggest_snake = 1
                 else:
-                    is_biggest_snake = 0
+                    self.is_biggest_snake = 0
 
 
         norm_head = self.normalize(self.getHead(), 0, self.size - 1)
@@ -292,7 +315,7 @@ class PlayerData():
             self.just_eat_apple,
             norm_num_apples_on_board,
             norm_alive_snakes,
-            is_biggest_snake
+            self.is_biggest_snake
             ] + sight_obs + \
             list(self.prev_actions)
 
