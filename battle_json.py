@@ -1,5 +1,5 @@
 from render import GetNewestModel
-from Snake import Snake
+from SnakeEnvironment import Snake
 import time
 
 game_dict = {

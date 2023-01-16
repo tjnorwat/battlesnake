@@ -49,3 +49,94 @@ DUELS
     * same length, both die 
 * if snake runs into another snake it dies, no matter the length
 * snakes start in random location
+
+
+First things to get working :
+* making snake multiplayer 
+    * 2d list for snakes or dict ?
+    * [ [ [1,2], [1,3] ], [ [2,3], [4,5] ] ]
+* testing out between random actions for now and human input / or both human input  
+* make steps take list of actions
+* make AI envs
+* snake player file with direction and snake position
+* normalizing observation 
+
+maybe steps should be sequential meaning 
+move all snakes at once and check whether they eat apple / collide with wall / max moves 
+check whether they collide with others snakes 
+
+so combinging movign snake and eating apple / collisiosn with wall etc 
+
+environment will have to determine reward due to whether or not we won the game 
+pass through whether we ate an apple and then determine 
+
+ I think we should pass reward and then if we calculate that we won we can cahnge the reward 
+ will also have to caluclate if we run into anotehr snakes and change reward 
+
+seems like for every observation, we see the other observations of all the other snakes (really big list)
+
+
+* do snake render
+    * light shade for head
+    * middle shade for body 
+    * dark shade for tail
+    * presets (up to 8)
+
+* check health of snake
+
+* test :(
+
+# update how big observation is 
+# check action space 
+* update reset state 
+
+
+* script for colors 
+* check obs 
+
+* WERID BEHAVEIOR 
+if a snake dies and another snake runs into the one thats dead, does he also die ?? ? rn, no
+
+
+* FPS issues
+        * just a problem with running 1 
+    * check previous snake in single env 
+    * figure out dummyvecenv??
+
+* normalize inputs 
+    * sight obs range [-1, 1]
+    * rest should be [0, 1]
+    * have to calcluate like values, can't group everything up 
+        * create multiple fucntions for each type 
+
+* render screen
+    *lenght of each snake 
+    * who wins at end 
+
+
+# check start spawning of each snake (is there a certain distance they must be apart? )
+# reward for eating another snake should be higher 
+# implement reward for less moves ?? 
+
+
+# intitiate to zero for prev action 
+# look into difference betwen negative nad postiive values for obs 
+# redo rewards for better sum zero 
+
+# clip values between 0 and 1 
+look at obs 
+# add how many moves each snake has to render screen
+
+# more reward for less total moves 
+    * have var for max moves and update 
+# observation doesnt include other snakes head? trying to fix them not going for each other 
+
+# make code CLEANER 
+# GO -> python 
+# work with battlesnake api ( i think done)
+# look into different size boards training
+# look into more than 2 snake training
+
+# support for more than 1 game in battlesnake 
+# start in random direction for training? 
+# random health ? 
