@@ -1,9 +1,9 @@
 import cv2
 import random
 import numpy as np
+from typing import List
 from gym import spaces, Env
 from PlayerData import PlayerData as Player
-from typing import List
 
 class Snake(Env):
 
