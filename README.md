@@ -19,7 +19,7 @@
 The main goal of this project is to create a custom gym environment in which an agent learns to play the game snake for [BattleSnake](https://play.battlesnake.com/). I have another repo which is a single player mode, which you can check out [here](https://github.com/tjnorwat/snake_ai), where the agent tries to complete the game of snake in the fewest moves possible. This project aims to create an environment where multiple agents can play against each other, mainly 1v1. This required modifying SB3 to be able to support multiple agents in a single env (more about that later). In the end, the agent does OK against others, but ultimately does not perform as well as I would like it due to not "seeing" different types of strategies. 
 
 # Installation
-If you would like to install this project and train the snake yourself make sure to install stable baselines and opencv. `pip install requirements.txt` I also used torch and cuda, but you will have to install that on your own if you would like to use those. 
+If you would like to install this project and train the snake yourself make sure to install stable baselines and opencv. `pip install -r requirements.txt` I also used torch and cuda, but you will have to install that on your own if you would like to use those. 
 
 # Usage
 
