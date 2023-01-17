@@ -140,3 +140,5 @@ look at obs
 # support for more than 1 game in battlesnake 
 # start in random direction for training? 
 # random health ? 
+
+# if both snakes collide into eachother bodies, one snake lives, the other dies(both should die)

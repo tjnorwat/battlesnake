@@ -1,9 +1,9 @@
 import cv2
 import random
 import numpy as np
+from typing import List
 from gym import spaces, Env
 from PlayerData import PlayerData as Player
-from typing import List
 
 class Snake(Env):
 
@@ -133,8 +133,6 @@ class Snake(Env):
 
 
         obs = self._GetOBS()
-        # print('obs shape', np.shape(obs))
-
 
         # need to calculate terminal states
         # check if all snakes are dead 
@@ -199,7 +197,6 @@ class Snake(Env):
 
             for id2 in all_player_obs.keys():
                 if id1 != id2:
-                    # temp_obs.extend(all_player_obs[id2])
                     temp_obs += all_player_obs[id2]
 
             obs.append(temp_obs)
@@ -212,7 +209,6 @@ class Snake(Env):
 
         all_snake_pos = list()
         for player in self.snake_players:
-            # all_snake_pos.extend(player.getPosition())
             all_snake_pos += player.getPosition()
         choices = [choice for choice in self.whole_coord if choice not in all_snake_pos and choice not in self.apple_positions]
         # make sure the board isn't filled up completely 
@@ -241,7 +237,6 @@ class Snake(Env):
     # __________________________________________________________
 
     def getActionFromDirection(self, player_idx):
-        # print(self.snake_players[player_idx].score)
         player = self.snake_players[player_idx]
         if player.direction == 0:
             action = 'left'
@@ -254,34 +249,27 @@ class Snake(Env):
 
         return action
 
-
     def setApplePosition(self, apple_positions):
         self.apple_positions = apple_positions
-
 
     # figure out how to change these 
     def setSnakePosition(self, snake_positions):
         for player, position in zip(self.snake_players, snake_positions):
             player.SetPosition(position)
 
-
     def setLength(self, snake_lengths):
         for player, length in zip(self.snake_players, snake_lengths):
             player.setScore(length)
-
 
     def setHealth(self, snake_healths: List[int]):
         for player, health in zip(self.snake_players, snake_healths):
             player.setHealth(health)
 
-
     def addActionToList(self, player_idx: int, action: int):
         self.snake_players[player_idx].addToPrevAction(action)
 
-
     def addDirection(self, player_idx:int, direction: int):
         self.snake_players[player_idx].setDirection(direction)
-
 
     def getPlayerDirection(self, player_idx: int):
         return self.snake_players[player_idx].getDirection()
@@ -290,18 +278,14 @@ class Snake(Env):
     def setPlayer(self, player_idx: int, action):
         self.snake_players[player_idx].MoveSnake(action, self.apple_positions)
 
-
     def getPlayerHead(self, player_idx: int):
         return self.snake_players[player_idx].getHead()
-
 
     def stepPlayer(self, player_idx: int, action: int):
         self.snake_players[player_idx].MoveSnake(action=action, apple_positions=self.apple_positions)
 
-
     def getApplePositions(self):
         return self.apple_positions
-
 
     def ateApple(self, player_idx: int, ate_apple: int):
         self.snake_players[player_idx].setAteApple(ate_apple)
@@ -341,29 +325,22 @@ class Snake(Env):
             
             tail = player.getTail()
             cv2.rectangle(img=img, pt1=(tail[0] * renderer, (self.size - tail[1]) * renderer - renderer), pt2=(tail[0] * renderer + renderer, (self.size - tail[1]) * renderer), color=color[2], thickness=-1)
+            
             if not player.isDone():
-
-                cv2.putText(
-                    img=img, 
-                    text=f'Agent {i} Len: {player.getScore()} {player.getHealth()}', 
-                    org=( ((self.size) * renderer), renderer * i), 
-                    fontFace=cv2.FONT_HERSHEY_DUPLEX, 
-                    fontScale=.8, 
-                    color=color[1], 
-                    thickness=2
-                )
-            
+                text = f'Agent {i} Len: {player.getScore()} {player.getHealth()}'
             else:
-                cv2.putText(
-                    img=img, 
-                    text=f'Agent {i} Len: {player.getScore()} {player.getHealth()} died', 
-                    org=( ((self.size) * renderer), renderer * i), 
-                    fontFace=cv2.FONT_HERSHEY_DUPLEX, 
-                    fontScale=.8, 
-                    color=color[1], 
-                    thickness=2
-                )
-            
+                text = f'Agent {i} Len: {player.getScore()} {player.getHealth()} died'
+                
+            cv2.putText(
+                img=img, 
+                text=text, 
+                org=( ((self.size) * renderer), renderer * i), 
+                fontFace=cv2.FONT_HERSHEY_DUPLEX, 
+                fontScale=.8, 
+                color=color[1], 
+                thickness=2
+            )
+
             i += 1
 
         # drawing the apple
