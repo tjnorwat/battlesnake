@@ -1,10 +1,7 @@
 from cv2 import waitKey
-# from SnakeGame import Snake
-# from newSnakeGame import Snake, Actions
-from SnakeEnvironment import Snake
 from PlayerData import Actions
-# from improvedSnakeGame import Snake, Actions
-import time
+from SnakeEnvironment import Snake
+
 
 num_players = 2
 
@@ -17,23 +14,20 @@ while True:
     actions = list()
     for _ in range(num_players):
         key_press = waitKey(0)
-    
-        if key_press == ord('a'):
+
+        if key_press == ord("a"):
             action = Actions.LEFT
-        elif key_press == ord('d'):
+        elif key_press == ord("d"):
             action = Actions.RIGHT
-        elif key_press == ord('w'):
+        elif key_press == ord("w"):
             action = Actions.UP
-        elif key_press == ord('s'):
+        elif key_press == ord("s"):
             action = Actions.DOWN
 
         actions.append(action)
-    
+
     obs, rewards, done, info = player.step(actions)
     player.render(renderer=100)
-    # print(rewards)
 
-    # print('obs len', len(obs))
-    # print('rewards ', rewards)
     if done:
         break

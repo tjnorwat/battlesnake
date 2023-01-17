@@ -1,8 +1,7 @@
 from __future__ import annotations
-from typing import List, Union, Tuple, Dict, Any, Type
 import numpy as np
-from enum import Enum
 from collections import deque
+from typing import List, Tuple
 
 
 class Actions():
@@ -14,7 +13,6 @@ class Actions():
 
 class PlayerData():
     def __init__(self, ID, is_human=False, size=7):
-
 
         # left/right/up/down
         # dont need down, using it just for human
@@ -122,8 +120,7 @@ class PlayerData():
         return self.is_biggest_snake
 
 
-    # might have to return whether or not we eat apple, reward, done
-    # returning whether we just ate apple for reward, if we are done (collide with self or wall), and the apple to delete if we ate one
+    # returning whether we just ate apple for reward and the apple to delete if we ate one
     def MoveSnake(self, action: int, apple_positions: List[list]) -> Tuple[int, list]:
         
         if isinstance(action, list):
@@ -232,8 +229,6 @@ class PlayerData():
             reward = -3
 
         # have to send back which apple we just ate
-        # not sure if complications with other snakes=
-        # think it works out somehow 
         if self.just_eat_apple:
             apple_to_delete = snake_head
         else:
@@ -262,11 +257,6 @@ class PlayerData():
 
 
     def getOBS(self, snake_players: List[PlayerData], apple_positions: List[list]) -> list:
-
-        # if self.ID == 0:
-        #     return [1, 2]
-        # elif self.ID == 1:
-        #     return [3, 4]
 
         snake_head = self.getHead()
 
@@ -304,8 +294,6 @@ class PlayerData():
         norm_num_apples_on_board = self.normalize_val(len(apple_positions), 1, self.size ** 2 - 3 * len(snake_players)) # always will be 1 apple 
         norm_alive_snakes = self.normalize_val(num_alive_snakes, 0, len(snake_players)) # all snakes can die on a single turn
 
-        # more reward for less moves made at end game 
-
         normalized_obs = norm_head + \
             norm_tail + \
             [norm_direction,
@@ -319,41 +307,16 @@ class PlayerData():
             ] + sight_obs + \
             list(self.prev_actions)
 
-        # dir_string = ['left', 'right', 'up', 'down', 'leftUP', 'leftDOWN', 'rightUP', 'rightDOWN'] # for testing 
-        # factor = 2 + len(snake_players)
-        # print('ID', self.ID)
-        # dir_counter = 0
-        # for idx, sight in enumerate(sight_obs):
-        #     if idx % factor == 0:
-        #         print()
-        #         print(dir_string[dir_counter])
-        #         dir_counter += 1
-        #         print('Apple', sight)
-
-        #     elif idx % factor == 1:
-        #         print('wall', sight)
-            
-        #     elif idx % factor == 2:
-        #         print('itself', sight)
-            
-        #     elif idx % factor == 3:
-        #         print('other snake', sight)
-
-        # print()
-
         return normalized_obs
 
 
-    # maybe it makes sense to just incldue a list of snakes as parameters and loop through as well
     # direction should be -1/+1 in tuple (1, -1) for x, y
     def _lookInDirection(self, direction: int, snake_head: list, other_snakes: List[PlayerData], apple_positions: List[list]) -> list:
         
-        # changed to 2 because body found will be calculated in the for loop
         look = [-1] * (4 + len(other_snakes))
         food_found = False
 
         # need to check the first time we come across a specific snake
-        # minus 1 because we dont count ourselves
         other_snakes_found = [False] * (len(other_snakes))
 
         distance = 0
@@ -370,7 +333,6 @@ class PlayerData():
             
             # looking for other snakes
             # start index at 4 bc of look
-            # current snake will always be in position 2
             counter = 0
             idx = 4
             snakes_found_idx = 0 
@@ -393,7 +355,7 @@ class PlayerData():
 
                         other_snakes_found[snakes_found_idx] = True
                         
-                # if we are the same snake, dont count head
+                # if we are the same snake, dont count head cause we cant
                 # current snake will always be in position 2
                 elif self.getID() == other_snake.getID():
                     if curr_pos in other_snake.getPosition()[1:]:
@@ -411,7 +373,6 @@ class PlayerData():
                 idx += 2
                 counter += 1
                 snakes_found_idx += 1
-
 
             # increment the position 
             curr_pos[0] += direction[0]
@@ -452,7 +413,6 @@ class PlayerData():
 
 
     def normalize(self, arr: list, min_val: int, max_val: int) -> list:
-
         norm_arr = []
         diff = self.t_max - self.t_min
         diff_arr = max_val - min_val
@@ -462,12 +422,6 @@ class PlayerData():
         return norm_arr
 
     def normalize_val(self, val: int, min_val: int, max_val: int) -> int:
-
         diff = self.t_max - self.t_min
         diff_val = max_val - min_val
         return (((val - min_val)*diff)/diff_val) + self.t_min
-
-
-    def __str__(self):
-
-        return str(self.snake_position)
