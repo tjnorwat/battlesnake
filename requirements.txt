@@ -1,2 +1,4 @@
-stable-baselines3
+stable-baselines3[extra]
 opencv-python
+shimmy>=0.2.1
+tensorboard
