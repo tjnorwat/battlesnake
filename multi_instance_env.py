@@ -1,4 +1,4 @@
-import gym
+import gymnasium as gym
 import numpy as np
 import os
 import glob
@@ -22,6 +22,35 @@ class SB3MultiInstanceEnv(DummyVecEnv):
         observation_space, action_space = self.envs[0].observation_space, self.envs[0].action_space
 
         VecEnv.__init__(self, self.num_envs, observation_space, action_space)
+
+    def get_attr(self, attr_name: str, indices: VecEnvIndices = None) -> List[Any]:
+        # Handle indices
+        if indices is None:
+            indices = range(self.num_envs)
+        elif isinstance(indices, int):
+            indices = [indices]
+
+        results = []
+        for idx in indices:
+            # Map global agent index (idx) to which environment it belongs to
+            # and which agent inside that environment
+            env_idx = 0
+            count = 0
+            for i, n_agents in enumerate(self.n_agents_per_env):
+                if count + n_agents > idx:
+                    env_idx = i
+                    break
+                count += n_agents
+
+            # Retrieve attribute from the environment
+            try:
+                attr = getattr(self.envs[env_idx], attr_name)
+                results.append(attr)
+            except AttributeError:
+                # If the attribute isn't found, check if it's meant to be None (like render_mode defaults)
+                results.append(None)
+
+        return results
 
     def reset(self) -> VecEnvObs:
 
@@ -174,36 +203,3 @@ class SB3SelfPlayEnv(DummyVecEnv):
             batch_infos.append(info)
 
         return np.asarray(batch_obs), np.array(batch_rews), np.array(batch_dones), batch_infos
-
-    def seed(self, seed: Optional[int] = None) -> List[Union[None, int]]:
-        pass
-
-    def close(self) -> None:
-        pass
-
-    def render(self, mode: str = "human") -> Optional[np.ndarray]:
-        pass
-
-    def get_attr(self, attr_name: str, indices: VecEnvIndices = None) -> List[Any]:
-        pass
-
-    def set_attr(self, attr_name: str, value: Any, indices: VecEnvIndices = None) -> None:
-        pass
-
-    def env_method(self, method_name: str, *method_args, indices: VecEnvIndices = None, **method_kwargs) -> List[Any]:
-        pass
-
-    def env_is_wrapped(self, wrapper_class: Type[gym.Wrapper], indices: VecEnvIndices = None) -> List[bool]:
-        pass
-
-    def get_images(self) -> Sequence[np.ndarray]:
-        pass
-
-    def _save_obs(self, env_idx: int, obs: VecEnvObs) -> None:
-        pass
-
-    def _obs_from_buf(self) -> VecEnvObs:
-        pass
-
-    def _get_target_envs(self, indices: VecEnvIndices) -> List[gym.Env]:
-        pass

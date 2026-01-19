@@ -82,7 +82,7 @@ class PlayerData:
     def isDone(self) -> bool:
         return self.done
 
-    def getHealth(self) -> bool:
+    def getHealth(self) -> int:
         return self.health
 
     def setHealth(self, health):
@@ -243,14 +243,14 @@ class PlayerData:
     def getOBS(self, snake_players: List[PlayerData], apple_positions: List[list]) -> np.ndarray:
 
         # Init grid (H, W, 1) for Channels Last format typical in Gym
-        # Using float32 for CNN
-        grid = np.zeros((self.size, self.size, 1), dtype=np.float32)
+        # Using uint8 for CNN
+        grid = np.zeros((self.size, self.size, 1), dtype=np.uint8)
 
-        # Place apples (Value: 0.5 - distinct from snakes)
+        # Place apples (Value: 255)
         for apple_pos in apple_positions:
             x, y = apple_pos
             if 0 <= x < self.size and 0 <= y < self.size:
-                grid[x, y, 0] = 5.0
+                grid[x, y, 0] = 255
 
         # Place snakes
         for player in snake_players:
@@ -261,8 +261,8 @@ class PlayerData:
 
             is_self = player.getID() == self.getID()
 
-            # Self:  Head=1.0  -> Tail approach 0.2
-            # Enemy: Head=-1.0 -> Tail approach -0.2
+            # Self:  150-200
+            # Enemy: 50-100
             # We use a gradient to encode direction
 
             for i, part in enumerate(body):
@@ -273,11 +273,11 @@ class PlayerData:
                     segment_ratio = i / (length - 1) if length > 1 else 0
 
                     if is_self:
-                        # 1.0 down to 0.2
-                        val = 1.0 - (segment_ratio * 0.8)
+                        # 200 down to 150
+                        val = 200 - int(segment_ratio * 50)
                     else:
-                        # -1.0 up to -0.2
-                        val = -1.0 + (segment_ratio * 0.8)
+                        # 100 down to 50
+                        val = 100 - int(segment_ratio * 50)
 
                     grid[x, y, 0] = val
 

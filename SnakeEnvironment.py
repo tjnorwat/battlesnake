@@ -2,7 +2,7 @@ import cv2
 import random
 import numpy as np
 from typing import List
-from gym import spaces, Env
+from gymnasium import spaces, Env
 from PlayerData import PlayerData as Player
 
 
@@ -52,7 +52,7 @@ class Snake(Env):
         self.action_space = spaces.Discrete(3)
 
         shape = self.getOBSShape()
-        self.observation_space = spaces.Box(low=-1, high=1, shape=shape, dtype=np.float16)  # change later
+        self.observation_space = spaces.Box(low=0, high=255, shape=shape, dtype=np.uint8)  # change later
 
     # after every step there is a 15% chance to spawn an apple
     # there is no guarantee that another  apple will spawn if we eat
